@@ -45,7 +45,7 @@ usage() {
                 local dev purposes.
 
         -h      Display this help message.
-        "
+        \n"
 }
 
 while getopts "sih" option; do
@@ -57,14 +57,14 @@ while getopts "sih" option; do
         exit
         ;;
     \?)
-        printf >&2 "Unknown argument!\n./binary-validation \$version [options] [-s][-i][-h]"
+        printf >&2 "Unknown argument!\n./binary-validation \$version [options] [-s][-i][-h]\n"
         exit 1
         ;;
     esac
 done
 
 if [ "$OPTIND" -gt "$#" ]; then
-    echo "Missing mdBook version!"
+    printf "Missing mdBook version!\n"
     exit 1
 fi
 
@@ -72,12 +72,12 @@ shift $((OPTIND - 1))
 if [[ -n "$1" && "$1" =~ $reg_pattern ]]; then
     MDBOOK_VERSION="$1"
 elif [[ ! "$1" =~ $reg_pattern ]]; then
-    printf >&2 "Unrecognized mdBook version pattern, script accepts semantic version for example: 0.4.52"
+    printf >&2 "Unrecognized mdBook version pattern, script accepts semantic version for example: 0.4.52\n"
     exit 1
 fi
 
 # If the mdbook version is pre-digest API version (<0.4.52), will ask for user validation
-interactive-download() {
+interactive() {
     if [[ $INTERACTIVE -gt 0 ]]; then
         local -l choice
         until [[ $choice =~ ^[Yy|nN]$ ]]; do
@@ -96,8 +96,6 @@ interactive-download() {
                 ;;
             esac
         done
-    else
-        printf "Non-interactive download, proceeding...\n"
     fi
 }
 
@@ -121,7 +119,7 @@ json_setup() {
         jq "$jquery")" ||
         {
             printf "Something went wrong with the GH API request. Consider adding set -x flag.\n" 1>&2
-            return 1
+            exit 1
         }
 
     # TODO Implement GH TOKEN in the future?
@@ -142,7 +140,7 @@ binary_fetch() {
         printf "\n"
     else
         printf "\nThe processed JSON record appears to be empty, queried version may not exist...\nExiting..."
-        return 1
+        exit 1
     fi
 }
 
@@ -164,13 +162,13 @@ validation-decision() {
         printf "Skipping digest check, extracting binary...\n"
     elif [[ "$api_digest" == 'null' && $INTERACTIVE == 1 ]]; then
         printf "This version of mdBook (%s) pre-dates the SHA digest feature of the GitHub API and cannot be validated.\n" "$MDBOOK_VERSION"
-        interactive-download || {
-            printf >&2 "Interactive-download function failed, could not proceed with download.\n"
+        interactive || {
+            printf >&2 "Interactive function failed, could not proceed with extraction.\n"
         }
     elif [[ "$api_digest" == "$zip_digest" && $INTERACTIVE == 1 ]]; then
         printf "The mdBook binary has been successfully validated.\n"
-        interactive-download || {
-            printf >&2 "Interactive-download function failed, could not proceed with download.\n"
+        interactive || {
+            printf >&2 "Interactive function failed, could not proceed with extraction.\n"
         }
     elif [[ "$api_digest" == 'null' ]]; then
         printf "Digest could not be gathered from the API, likely an older version (<0.4.52).\nExiting..."
@@ -186,9 +184,9 @@ validation-decision() {
 
     if [[ $EXTRACT == 1 && -e "$zip" ]]; then
         tar xfz "$zip"
-        printf "Extracting binary for use...\nBinary is ready for use!"
+        printf "Extracting binary for use...\nBinary is ready for use!\n"
     else
-        printf "mdBook tar does not appear to exist...\nCleaning up...\nExiting...\n"
+        printf "mdBook tar not found...\nCleaning up...\nExiting...\n"
     fi
     [[ -e $zip ]] && rm -f "$zip"
 }
