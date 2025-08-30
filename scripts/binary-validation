@@ -1,19 +1,17 @@
 #!/bin/bash
 
-# binary-validator.sh v1.1.0
+# binary-validator.sh v1.2.0
 #
 # Authored by:
 # github.com/cmckee786
 # github.com/Kolkhis
 #
 # Targeting mdBook version v0.4.52 as of Aug, 2025
-# Only requests 5 latest release records, remove ?per_page=5 to
-# fetch all from logic to request all records
+# Only requests 5 latest release records, remove ?per_page=5
+# from API request (json-setup()) to fetch all records
 #
 # Requires mdBook semantic version input from command line
-# For example 'binary-validation.sh v0.1.15'
-
-set -eo pipefail
+# For example 'binary-validation.sh 0.1.15'
 
 declare MDBOOK_VERSION
 declare SKIP_DIGEST=0
@@ -42,9 +40,9 @@ usage() {
                 the script when it is known the version does not support the digest check. Practical for
                 testing or debug purposes.
 
-        -i      Should be used when the mdBook version has an unknown/null digest check value. This option will
-                prompt the user whether to continue the download if it does not detect the sha digest. Practical
-                for local dev purposes.
+        -i      Should be used to test whether the mdBook version has an unknown/null digest check value.
+                This option will prompt the user whether to continue the download if it does not detect the 
+                sha digest. Practical for debug or local dev purposes.
 
         -h      Display this help message.
         "
@@ -69,7 +67,7 @@ if [ "$OPTIND" -gt "$#" ]; then
     exit 1
 fi
 
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 if [[ -n "$1" && "$1" =~ $reg_pattern ]]; then
     MDBOOK_VERSION="$1"
 elif [[ ! "$1" =~ $reg_pattern ]]; then
@@ -77,7 +75,7 @@ elif [[ ! "$1" =~ $reg_pattern ]]; then
     exit 1
 fi
 
-# If the mdbook version is pre-digest version (<0.4.52), ask for user validation
+# If the mdbook version is pre-digest API version (<0.4.52), will ask for user validation
 interactive-download() {
     if [[ $INTERACTIVE -gt 0 ]]; then
         local -l choice
@@ -86,7 +84,7 @@ interactive-download() {
             choice=${choice:-N}
             case $choice in
             y*)
-                printf "Proceeding with download.\n"
+                printf "Proceeding with extraction...\n"
                 EXTRACT=1
                 ;;
             n*)
@@ -99,7 +97,6 @@ interactive-download() {
         done
     else
         printf "Non-interactive download, proceeding...\n"
-        return 0
     fi
 }
 
@@ -148,6 +145,7 @@ binary_fetch() {
     fi
 }
 
+# Designed such that any cases that function return 1 will still remove tar.gz if it was downloaded
 validation-decision() {
     local api_digest
     local zip_digest
@@ -160,18 +158,18 @@ validation-decision() {
     printf "%2s %s\n" "ZIP:" "$zip" "API_DIGEST:" "$api_digest"
     printf "ZIP_DIGEST: %s\n\n" "$zip_digest"
 
-    if [[ $SKIP_DIGEST -eq 1 ]]; then
+    if [[ $SKIP_DIGEST == 1 ]]; then
         EXTRACT=1
-        printf "Skipping digest check, fetching binary...\n"
-    elif [[ "$api_digest" == 'null' && $INTERACTIVE -eq 1 ]]; then
+        printf "Skipping digest check, extracting binary...\n"
+    elif [[ "$api_digest" == 'null' && $INTERACTIVE == 1 ]]; then
         printf "This version of mdBook (%s) pre-dates the SHA digest feature of the GitHub API and cannot be validated.\n" "$MDBOOK_VERSION"
         interactive-download || {
-            printf >&2 "Could not proceed with download.\n"
+            printf >&2 "Interactive-download function failed, could not proceed with download.\n"
         }
-    elif [[ "$api_digest" == "$zip_digest" && $INTERACTIVE -eq 1 ]]; then
+    elif [[ "$api_digest" == "$zip_digest" && $INTERACTIVE == 1 ]]; then
         printf "The mdBook binary has been successfully validated.\n"
         interactive-download || {
-            printf >&2 "Could not proceed with download.\n"
+            printf >&2 "Interactive-download function failed, could not proceed with download.\n"
         }
     elif [[ "$api_digest" == 'null' ]]; then
         printf "Digest could not be gathered from the API, likely an older version (<0.4.52).\nExiting..."
@@ -185,9 +183,11 @@ validation-decision() {
         echo "$json" | jq '.'
     fi
 
-    if [[ $EXTRACT -eq 1 ]]; then
+    if [[ $EXTRACT -eq 1 && -e "$zip" ]]; then
         tar xfz "$zip"
         printf "Extracting binary for use...\nBinary is ready for use!"
+    else
+        printf "mdBook tar does not appear to exist...\nCleaning up..."
     fi
     [[ -e $zip ]] && rm -f "$zip"
 }
