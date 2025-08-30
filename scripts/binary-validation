@@ -41,8 +41,8 @@ usage() {
                 testing or debug purposes.
 
         -i      Should be used to test whether the mdBook version has an unknown/null digest check value.
-                This option will prompt the user whether to continue the download if it does not detect the 
-                sha digest. Practical for debug or local dev purposes.
+                This option will prompt the user whether to continue the download. Practical for debug or 
+                local dev purposes.
 
         -h      Display this help message.
         "
@@ -54,7 +54,8 @@ while getopts "sih" option; do
     i) INTERACTIVE=1 ;;
     h)
         usage
-        exit;;
+        exit
+        ;;
     \?)
         printf >&2 "Unknown argument!\n./binary-validation.sh \$version [options] [-s][-i][-h]"
         exit 1
@@ -201,4 +202,3 @@ if [[ -n "$MDBOOK_VERSION" ]]; then
 else
     printf >&2 "MDBOOK_VERSION appears to be empty! Script requires a semantic version, for example: 0.4.52\n"
 fi
-
