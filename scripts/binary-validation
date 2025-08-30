@@ -11,7 +11,7 @@
 # from API request (json-setup()) to fetch all records
 #
 # Requires mdBook semantic version input from command line
-# For example 'binary-validation.sh 0.1.15'
+# For example 'binary-validation 0.1.15'
 
 declare MDBOOK_VERSION
 declare SKIP_DIGEST=0
@@ -33,7 +33,7 @@ usage() {
 
 
     USAGE
-        ./binary-validation.sh \$version [options] [-s][-i][-h]
+        ./binary-validation \$version [options] [-s][-i][-h]
 
     OPTIONS
         -s      Skips GitHub API sha256 digest check logic, usually used with a non-interactive call of
@@ -57,7 +57,7 @@ while getopts "sih" option; do
         exit
         ;;
     \?)
-        printf >&2 "Unknown argument!\n./binary-validation.sh \$version [options] [-s][-i][-h]"
+        printf >&2 "Unknown argument!\n./binary-validation \$version [options] [-s][-i][-h]"
         exit 1
         ;;
     esac
