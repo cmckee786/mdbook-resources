@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# binary-validator.sh v1.2.0
+# binary-validator v1.2.0
 #
 # Authored by:
 # github.com/cmckee786
@@ -184,11 +184,11 @@ validation-decision() {
         echo "$json" | jq '.'
     fi
 
-    if [[ $EXTRACT -eq 1 && -e "$zip" ]]; then
+    if [[ $EXTRACT == 1 && -e "$zip" ]]; then
         tar xfz "$zip"
         printf "Extracting binary for use...\nBinary is ready for use!"
     else
-        printf "mdBook tar does not appear to exist...\nCleaning up..."
+        printf "mdBook tar does not appear to exist...\nCleaning up...\nExiting...\n"
     fi
     [[ -e $zip ]] && rm -f "$zip"
 }
